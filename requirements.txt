@@ -1,0 +1,8 @@
+# 小红书发布工具 v2 - 依赖配置
+flet>=0.21.0
+google-generativeai>=0.4.0
+Pillow>=10.0.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+httpx>=0.27.0
+playwright>=1.40.0

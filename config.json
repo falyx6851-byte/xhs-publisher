@@ -1,0 +1,16 @@
+{
+  "api_key": "AIzaSyA8Q57TVV2opIuCoc2tPZAUPjIFASRw4Ls",
+  "model": "gemini-3-flash-preview",
+  "template": "breath",
+  "prompt_style": "深度科技主笔",
+  "proxy": {
+    "enabled": false,
+    "http": "",
+    "https": ""
+  },
+  "theme": "dark",
+  "auto_publish": false,
+  "xhs_cookie": "",
+  "execution_mode": "manual",
+  "silent_publish": false
+}
