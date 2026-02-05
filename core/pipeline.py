@@ -14,11 +14,18 @@ import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 # 添加父目录到路径，以便导入核心模块
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from xhs_core import XHSGenerator
-
-# 本地模块
-from config_manager import ConfigManager
+try:
+    from .xhs_core import XHSGenerator
+    from .config_manager import ConfigManager
+except ImportError:
+    # 尝试直接导入 (兼容 old style)
+    try:
+        from xhs_core import XHSGenerator
+        from config_manager import ConfigManager
+    except ImportError:
+        # 尝试从 core 导入 (兼容 root execution)
+        from core.xhs_core import XHSGenerator
+        from core.config_manager import ConfigManager
 
 # ================== 常量 ==================
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
