@@ -82,15 +82,57 @@ PARA_SPACING = 44
 CARD_MARGIN_OUTER = 50
 CARD_PADDING_INNER = 50
 
-FONT_PATH_REGULAR = "C:/Windows/Fonts/msyh.ttc"
-FONT_PATH_BOLD = "C:/Windows/Fonts/msyhbd.ttc" 
-FONT_PATH_EN = "C:/Windows/Fonts/times.ttf"
+# ================= 3. 动态资源加载（跨平台兼容） =================
 
-# ================= 3. 工具函数库 =================
+def find_font(font_names, fallback=None):
+    """
+    在多个位置查找字体文件 (Windows/Linux/Android)
+    """
+    search_paths = [
+        os.path.join(os.path.dirname(__file__), "../assets/fonts"),  # 本地资源
+        os.path.join(os.path.dirname(__file__), "assets/fonts"),
+        "C:/Windows/Fonts",            # Windows
+        "/usr/share/fonts",            # Linux
+        "/usr/share/fonts/opentype/noto",  # Ubuntu Noto CJK
+        "/usr/share/fonts/truetype",   # Linux
+        "/system/fonts",               # Android
+    ]
+    
+    for name in font_names:
+        for path in search_paths:
+            full_path = os.path.join(path, name)
+            if os.path.exists(full_path):
+                return full_path
+    return fallback
+
+# 查找可用字体 (按优先级尝试)
+FONT_PATH_REGULAR = find_font([
+    "msyh.ttc", "msyh.ttf",                   # Windows 微软雅黑
+    "NotoSansCJK-Regular.ttc",                # Ubuntu/Linux Noto
+    "NotoSansSC-Regular.otf",                 # Android
+    "DroidSansFallback.ttf"                   # Old Android
+])
+FONT_PATH_BOLD = find_font([
+    "msyhbd.ttc", "msyhbd.ttf",
+    "NotoSansCJK-Bold.ttc",
+    "NotoSansSC-Bold.otf",
+    "DroidSansFallback.ttf"
+])
+FONT_PATH_EN = find_font([
+    "times.ttf", "Times New Roman.ttf",
+    "NotoSans-Regular.ttf",
+    "Roboto-Regular.ttf"
+])
+
+# ================= 4. 工具函数库 =================
 
 def get_font(path, size):
-    try: return ImageFont.truetype(path, size)
-    except: return ImageFont.load_default()
+    if not path:
+        return ImageFont.load_default()
+    try: 
+        return ImageFont.truetype(path, size)
+    except: 
+        return ImageFont.load_default()
 
 def hex_to_rgba(hex_color, opacity):
     rgb = ImageColor.getrgb(hex_color)

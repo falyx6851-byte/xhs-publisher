@@ -30,6 +30,10 @@ jobs:
 
     - name: 📦 安装依赖
       run: |
+        # 安装中文字体 (Ubuntu 没有预装)
+        sudo apt-get update
+        sudo apt-get install -y fonts-noto-cjk
+        
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install playwright
