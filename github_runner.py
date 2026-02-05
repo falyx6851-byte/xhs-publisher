@@ -78,13 +78,31 @@ async def main():
     pipeline = PublishPipeline(config_manager=env_config, logger=logger)
     pipeline.image_template = args.template
     
-    # 4. 执行流程
+    # 4. 加载提示词模板
+    prompts_file = os.path.join(os.path.dirname(__file__), "core", "prompts.json")
+    prompt_template = None
+    try:
+        with open(prompts_file, 'r', encoding='utf-8') as f:
+            prompts_data = json.load(f)
+            templates = prompts_data.get("templates", [])
+            if templates:
+                # 使用第一个模板作为默认
+                prompt_template = templates[0].get("prompt", "")
+                print(f"📝 已加载提示词模板: {templates[0].get('name', 'Unknown')}")
+    except Exception as e:
+        print(f"⚠️ 加载提示词失败: {e}")
+    
+    if not prompt_template:
+        print("❌ Error: 无法加载提示词模板")
+        sys.exit(1)
+    
+    # 5. 执行流程
     print("Step 1: Processing URL and Generating Content...")
     try:
         # 使用正确的方法名 run_full_pipeline
         success = await pipeline.run_full_pipeline(
             url=args.url, 
-            prompt_template=None  # 使用默认提示词
+            prompt_template=prompt_template
         )
         
         if success:
