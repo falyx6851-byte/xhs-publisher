@@ -53,10 +53,11 @@ async def main():
     # 定义简单的日志回调，直接输出到控制台
     logger = Logger(callback=lambda msg: print(f"[PIPELINE] {msg}"))
     
-    pipeline = PublishPipeline(logger=logger)
+    # 创建环境变量配置
+    env_config = EnvConfig(args)
     
-    # 注入环境配置
-    pipeline.config = EnvConfig(args)
+    # 用正确的参数初始化 Pipeline
+    pipeline = PublishPipeline(config_manager=env_config, logger=logger)
     pipeline.image_template = args.template
     
     # 4. 执行流程
