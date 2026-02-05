@@ -16,6 +16,8 @@ class EnvConfig:
             return os.environ.get('GEMINI_API_KEY') or default
         if key == 'xhs_cookie': 
             return os.environ.get('XHS_COOKIE') or default
+        if key == 'model':
+            return self.args.model
         
         # 其次读命令行参数
         if key == 'template':
@@ -28,6 +30,14 @@ class EnvConfig:
 
     def set(self, key, value):
         pass # 环境变量只读，不需要保存
+    
+    def is_silent_mode(self):
+        """GitHub Actions 强制使用静默模式"""
+        return True
+    
+    def is_auto_publish(self):
+        """GitHub Actions 强制自动发布"""
+        return True
 
 async def main():
     # 1. 解析命令行参数
@@ -63,13 +73,10 @@ async def main():
     # 4. 执行流程
     print("Step 1: Processing URL and Generating Content...")
     try:
-        # 传入 headless=True 强制无头模式 (GitHub Action 环境)
-        # auto_publish=True 强制自动发布
-        success = await pipeline.process_url(
+        # 使用正确的方法名 run_full_pipeline
+        success = await pipeline.run_full_pipeline(
             url=args.url, 
-            prompt_template=None, # 使用默认提示词
-            headless=True,
-            auto_publish=True
+            prompt_template=None  # 使用默认提示词
         )
         
         if success:
