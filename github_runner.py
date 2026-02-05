@@ -31,6 +31,14 @@ class EnvConfig:
     def set(self, key, value):
         pass # 环境变量只读，不需要保存
     
+    def get_current_api_key(self):
+        """获取 API Key"""
+        return os.environ.get('GEMINI_API_KEY') or ""
+    
+    def get_current_model(self):
+        """获取模型名称"""
+        return self.args.model
+    
     def is_silent_mode(self):
         """GitHub Actions 强制使用静默模式"""
         return True
