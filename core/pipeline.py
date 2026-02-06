@@ -12,6 +12,8 @@ from datetime import datetime
 from playwright.async_api import async_playwright
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
+import httpx
+from bs4 import BeautifulSoup
 
 # 添加父目录到路径，以便导入核心模块
 try:
@@ -136,6 +138,56 @@ class PublishPipeline:
                 return None
             finally:
                 await context.close()
+    
+    async def scrape_lightweight(self, url):
+        """轻量级 HTTP 抓取 (用于云端环境，不需要浏览器)"""
+        self.logger.log(f"🌐 [轻量模式] 正在抓取: {url}")
+        self.update_progress(10)
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        }
+        
+        try:
+            async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+                response = await client.get(url, headers=headers)
+                response.raise_for_status()
+                
+                soup = BeautifulSoup(response.text, 'html.parser')
+                
+                # 移除不需要的元素
+                for tag in soup.find_all(['script', 'style', 'nav', 'footer', 'iframe', 'noscript']):
+                    tag.decompose()
+                
+                # 提取标题
+                title = soup.title.string if soup.title else "未知标题"
+                
+                # 提取正文
+                # 微信公众号特定选择器
+                article = soup.find('div', id='js_content') or soup.find('div', class_='rich_media_content')
+                if article:
+                    content = article.get_text(separator='\n', strip=True)
+                else:
+                    content = soup.body.get_text(separator='\n', strip=True) if soup.body else ""
+                
+                self.scraped_data = {
+                    "title": title.strip() if title else "未知标题",
+                    "url": url,
+                    "full_text": content[:15000]
+                }
+                
+                self.logger.log(f"✅ [轻量模式] 抓取成功: {self.scraped_data['title'][:30]}... ({len(content)}字)")
+                self.update_progress(25)
+                return self.scraped_data
+                
+        except httpx.HTTPStatusError as e:
+            self.logger.log(f"❌ HTTP 错误: {e.response.status_code}")
+            return None
+        except Exception as e:
+            self.logger.log(f"❌ 抓取失败: {e}")
+            return None
     
     # ================== 2. AI 生成模块 ==================
     def generate_content(self, prompt_template):
@@ -562,13 +614,24 @@ class PublishPipeline:
         return self.archive_dir
     
     # ================== 完整流程 ==================
-    async def run_full_pipeline(self, url, prompt_template):
-        """执行完整发布流程"""
+    async def run_full_pipeline(self, url, prompt_template, cloud_mode=False):
+        """执行完整发布流程
+        
+        Args:
+            url: 文章链接
+            prompt_template: AI 提示词模板
+            cloud_mode: 是否为云端模式 (GitHub Actions)，云端模式使用轻量抓取并跳过发布
+        """
         self.update_progress(0)
         
-        # 1. 抓取
-        headless = self.config.is_silent_mode()
-        result = await self.scrape(url, headless=headless)
+        # 1. 抓取 (云端用轻量模式)
+        if cloud_mode:
+            self.logger.log("☁️ 云端模式：使用轻量级 HTTP 抓取")
+            result = await self.scrape_lightweight(url)
+        else:
+            headless = self.config.is_silent_mode()
+            result = await self.scrape(url, headless=headless)
+        
         if not result:
             return False
         
@@ -582,9 +645,15 @@ class PublishPipeline:
         if not result:
             return False
         
-        # 4. 发布
-        auto_publish = self.config.is_auto_publish()
-        success = await self.publish(headless=headless, auto_publish=auto_publish)
+        # 4. 发布 (云端模式跳过)
+        if cloud_mode:
+            self.logger.log("☁️ 云端模式：跳过发布步骤 (请下载 Artifact 后手动发布)")
+            self.logger.log(f"📂 图片已生成: {self.image_paths}")
+            success = True  # 内容生成成功即为成功
+        else:
+            headless = self.config.is_silent_mode()
+            auto_publish = self.config.is_auto_publish()
+            success = await self.publish(headless=headless, auto_publish=auto_publish)
         
         # 5. 归档
         self.archive()

@@ -99,10 +99,11 @@ async def main():
     # 5. 执行流程
     print("Step 1: Processing URL and Generating Content...")
     try:
-        # 使用正确的方法名 run_full_pipeline
+        # 使用云端模式：轻量抓取 + 跳过发布
         success = await pipeline.run_full_pipeline(
             url=args.url, 
-            prompt_template=prompt_template
+            prompt_template=prompt_template,
+            cloud_mode=True  # GitHub Actions 云端模式
         )
         
         if success:
