@@ -9,7 +9,7 @@ CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 # 默认配置
 DEFAULT_CONFIG = {
     "api_key": "",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3-flash-preview",
     "template": "tech_card",
     "prompt_style": "深度科技主笔",
     "proxy": {

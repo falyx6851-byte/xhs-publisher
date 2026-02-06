@@ -52,7 +52,7 @@ async def main():
     parser = argparse.ArgumentParser(description='Xiaohongshu Publisher CLI Runner')
     parser.add_argument("url", help="WeChat Article URL")
     parser.add_argument("--template", default="breath", help="Cover template name (e.g., tech_card, breath)")
-    parser.add_argument("--model", default="gemini-2.5-flash", help="AI Model name")
+    parser.add_argument("--model", default="gemini-3-flash-preview", help="AI Model name")
     args = parser.parse_args()
 
     print(f"🚀 [GitHub Runner] Starting Pipeline...")
