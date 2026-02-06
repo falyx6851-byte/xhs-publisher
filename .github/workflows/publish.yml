@@ -53,5 +53,8 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: generation-results
-        path: temp_output/
+        path: |
+          temp_output/
+          core/logs/
+          core/archives/
         retention-days: 3
