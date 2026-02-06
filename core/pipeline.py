@@ -416,15 +416,16 @@ class PublishPipeline:
         content = self.ai_data['content_body'].replace("## ", "").replace("**", "")
         
         async with async_playwright() as p:
-            # 如果选择静默但需要发布，不能用 headless
+            # 云端模式强制使用 headless
             actual_headless = headless and auto_publish
             
-            context = await p.chromium.launch_persistent_context(
-                user_data_dir=USER_DATA_DIR,
-                headless=actual_headless,  # 使用计算出的 headless 状态
-                channel="chrome",
-                viewport={'width': 1280, 'height': 800},
+            # 使用标准浏览器上下文 (兼容 GitHub Actions)
+            browser = await p.chromium.launch(
+                headless=actual_headless,
                 args=["--disable-blink-features=AutomationControlled", "--disable-notifications"]
+            )
+            context = await browser.new_context(
+                viewport={'width': 1280, 'height': 800}
             )
             
             # --- Cookie 注入逻辑 (GitHub Actions 专用) ---
@@ -449,7 +450,7 @@ class PublishPipeline:
                      self.logger.log(f"⚠️ Cookie 注入失败: {e}")
             # -------------------------------------------
 
-            page = context.pages[0]
+            page = await context.new_page()
             
             try:
                 # 访问发布页
@@ -538,16 +539,41 @@ class PublishPipeline:
                 if auto_publish:
                     self.logger.log("🚀 点击发布...")
                     await page.wait_for_timeout(3000)
-                    btn = page.locator("button.publishBtn").first
-                    if await btn.is_enabled():
-                        await btn.click()
+                    
+                    # 尝试多种选择器查找发布按钮
+                    btn = None
+                    selectors = [
+                        "button.publishBtn",
+                        "button:has-text('发布')",
+                        ".publish-btn",
+                        "button.css-1gl8z4q",  # 备用类名
+                        "[class*='publish']"
+                    ]
+                    
+                    for sel in selectors:
+                        try:
+                            candidate = page.locator(sel).first
+                            if await candidate.count() > 0 and await candidate.is_visible(timeout=3000):
+                                btn = candidate
+                                self.logger.log(f"✅ 找到发布按钮: {sel}")
+                                break
+                        except:
+                            continue
+                    
+                    if btn is None:
+                        self.logger.log("❌ 找不到发布按钮")
+                        await self.logger.save_screenshot(page, "no_publish_btn")
+                        return False
+                    
+                    try:
+                        await btn.click(timeout=10000)
                         self.logger.log("✅ 发布指令已发送！")
                         await page.wait_for_timeout(5000)
                         self.update_progress(100)
                         return True
-                    else:
-                        self.logger.log("❌ 发布按钮不可点")
-                        await self.logger.save_screenshot(page, "publish_disabled")
+                    except Exception as e:
+                        self.logger.log(f"❌ 点击发布按钮失败: {e}")
+                        await self.logger.save_screenshot(page, "publish_click_error")
                         return False
                 else:
                     self.logger.log("⏸️ 手动发布模式：请检查内容后手动点击发布")
@@ -564,6 +590,7 @@ class PublishPipeline:
                 if auto_publish:
                     await page.wait_for_timeout(5000)
                     await context.close()
+                    await browser.close()
     
     # ================== 5. 归档模块 ==================
     def archive(self):
@@ -620,7 +647,7 @@ class PublishPipeline:
         Args:
             url: 文章链接
             prompt_template: AI 提示词模板
-            cloud_mode: 是否为云端模式 (GitHub Actions)，云端模式使用轻量抓取并跳过发布
+            cloud_mode: 是否为云端模式 (GitHub Actions)，云端模式使用轻量抓取 + Cookie发布
         """
         self.update_progress(0)
         
@@ -645,11 +672,11 @@ class PublishPipeline:
         if not result:
             return False
         
-        # 4. 发布 (云端模式跳过)
+        # 4. 发布 (云端模式也发布，使用 Cookie 认证)
         if cloud_mode:
-            self.logger.log("☁️ 云端模式：跳过发布步骤 (请下载 Artifact 后手动发布)")
-            self.logger.log(f"📂 图片已生成: {self.image_paths}")
-            success = True  # 内容生成成功即为成功
+            self.logger.log("☁️ 云端模式：使用 Cookie 认证发布")
+            # 云端强制 headless + 自动发布
+            success = await self.publish(headless=True, auto_publish=True)
         else:
             headless = self.config.is_silent_mode()
             auto_publish = self.config.is_auto_publish()
