@@ -565,9 +565,24 @@ class PublishPipeline:
                         await self.logger.save_screenshot(page, "no_publish_btn")
                         return False
                     try:
-                        # 改用 JS 点击，有时更可靠
-                        self.logger.log("🚀 点击发布按钮 (JS Mode)...")
-                        await btn.evaluate("b => b.click()")
+                        # 改用鼠标物理点击，绕过潜在的 JS 事件检测
+                        self.logger.log("🚀 点击发布按钮 (Mouse Mode)...")
+                        
+                        # 获取按钮位置
+                        box = await btn.bounding_box()
+                        if box:
+                            x = box['x'] + box['width'] / 2
+                            y = box['y'] + box['height'] / 2
+                            
+                            # 模拟人类操作：移动 -> 悬停 -> 点击
+                            await page.mouse.move(x, y, steps=10)
+                            await page.wait_for_timeout(200)
+                            await page.mouse.down()
+                            await page.wait_for_timeout(100)
+                            await page.mouse.up()
+                        else:
+                            # 降级回普通点击
+                            await btn.click()
                         
                         # === 增强的发布确认逻辑 ===
                         self.logger.log("⏳ 等待发布结果...")
