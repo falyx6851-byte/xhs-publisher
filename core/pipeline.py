@@ -564,10 +564,10 @@ class PublishPipeline:
                         self.logger.log("❌ 找不到发布按钮")
                         await self.logger.save_screenshot(page, "no_publish_btn")
                         return False
-                    
                     try:
-                        self.logger.log("🚀 点击发布按钮...")
-                        await btn.click()
+                        # 改用 JS 点击，有时更可靠
+                        self.logger.log("🚀 点击发布按钮 (JS Mode)...")
+                        await btn.evaluate("b => b.click()")
                         
                         # === 增强的发布确认逻辑 ===
                         self.logger.log("⏳ 等待发布结果...")
@@ -576,15 +576,27 @@ class PublishPipeline:
                             # 或者等待出现 "发布成功" 字样
                             t1 = asyncio.create_task(page.wait_for_url("**/creator/home**", timeout=15000))
                             t2 = asyncio.create_task(page.wait_for_selector("text=发布成功", timeout=15000))
-                            done, pending = await asyncio.wait([t1, t2], return_when=asyncio.FIRST_COMPLETED, timeout=20000)
+                            t3 = asyncio.create_task(page.wait_for_selector("text=发布文章成功", timeout=15000))
+                            
+                            done, pending = await asyncio.wait([t1, t2, t3], return_when=asyncio.FIRST_COMPLETED, timeout=20000)
                             
                             for t in pending:
                                 t.cancel()
                             
-                            if done:
+                            success_signal = False
+                            for t in done:
+                                if not t.cancelled() and not t.exception():
+                                    success_signal = True
+                                    break
+                            
+                            if success_signal:
                                 self.logger.log("✅ 检测到发布成功信号！")
                             else:
-                                self.logger.log("⚠️ 等待超时，未检测到明确成功信号")
+                                self.logger.log("⚠️ 等待超时或失败，未检测到成功信号")
+                                # 记录失败原因 (如果有异常)
+                                for t in done:
+                                    if t.exception():
+                                        self.logger.log(f"   - 检测任务异常: {t.exception()}")
 
                         except Exception as e:
                             self.logger.log(f"⚠️ 检测信号异常: {e}")
@@ -593,8 +605,11 @@ class PublishPipeline:
                         await page.wait_for_timeout(3000)
                         await self.logger.save_screenshot(page, "after_publish_attempt")
                         
-                        self.update_progress(100)
-                        return True
+                        if success_signal:
+                            self.update_progress(100)
+                            return True
+                        else:
+                            return False
                     except Exception as e:
                         self.logger.log(f"❌ 点击发布按钮失败或超时: {e}")
                         await self.logger.save_screenshot(page, "publish_click_error")
