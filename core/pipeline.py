@@ -566,13 +566,37 @@ class PublishPipeline:
                         return False
                     
                     try:
-                        await btn.click(timeout=10000)
-                        self.logger.log("✅ 发布指令已发送！")
-                        await page.wait_for_timeout(5000)
+                        self.logger.log("🚀 点击发布按钮...")
+                        await btn.click()
+                        
+                        # === 增强的发布确认逻辑 ===
+                        self.logger.log("⏳ 等待发布结果...")
+                        try:
+                            # 1. 尝试等待跳转 (发布成功通常会跳回管理页)
+                            # 或者等待出现 "发布成功" 字样
+                            t1 = asyncio.create_task(page.wait_for_url("**/creator/home**", timeout=15000))
+                            t2 = asyncio.create_task(page.wait_for_selector("text=发布成功", timeout=15000))
+                            done, pending = await asyncio.wait([t1, t2], return_when=asyncio.FIRST_COMPLETED, timeout=20000)
+                            
+                            for t in pending:
+                                t.cancel()
+                            
+                            if done:
+                                self.logger.log("✅ 检测到发布成功信号！")
+                            else:
+                                self.logger.log("⚠️ 等待超时，未检测到明确成功信号")
+
+                        except Exception as e:
+                            self.logger.log(f"⚠️ 检测信号异常: {e}")
+                        
+                        # 无论是否检测到信号，都截图留证
+                        await page.wait_for_timeout(3000)
+                        await self.logger.save_screenshot(page, "after_publish_attempt")
+                        
                         self.update_progress(100)
                         return True
                     except Exception as e:
-                        self.logger.log(f"❌ 点击发布按钮失败: {e}")
+                        self.logger.log(f"❌ 点击发布按钮失败或超时: {e}")
                         await self.logger.save_screenshot(page, "publish_click_error")
                         return False
                 else:
