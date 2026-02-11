@@ -7,6 +7,14 @@
     <title>小红书发布工具 (云端版)</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="https://github.githubassets.com/favicons/favicon.png">
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js');
+            });
+        }
+    </script>
 </head>
 
 <body>
