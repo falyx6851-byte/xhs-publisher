@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>小红书发布工具 (云端版)</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="https://github.githubassets.com/favicons/favicon.png">
+</head>
+
+<body>
+
+    <div class="main-content">
+
+        <!-- 头部 -->
+        <header class="app-header">
+            <div class="logo">☁️</div>
+            <div class="title-group">
+                <h1>小红书发布工具</h1>
+                <div class="subtitle">GitHub Actions 云端版</div>
+            </div>
+            <a href="https://github.com/settings/tokens" target="_blank" class="pat-link" title="获取 PAT">🔑</a>
+        </header>
+
+        <!-- 设置区域 (折叠) -->
+        <div class="section settings-section">
+            <div class="section-title" id="toggleSettings">
+                <span>⚙️ 账号设置</span>
+                <span class="arrow">▼</span>
+            </div>
+            <div class="settings-content" id="settingsContent">
+                <div class="input-group">
+                    <input type="text" id="repoInput" value="falyx6851-byte/xhs-publisher"
+                        placeholder="用户名/仓库名 (例: user/repo)">
+                </div>
+                <div class="input-group" style="margin-top: 8px;">
+                    <input type="password" id="patInput" placeholder="GitHub PAT Token (ghp_...)">
+                </div>
+                <div class="save-tip">信息仅保存在你浏览器的本地缓存中，不会上传。</div>
+            </div>
+        </div>
+
+        <!-- 核心功能 -->
+        <div class="section">
+            <div class="section-title"><span class="icon">🔗</span> 文章链接</div>
+            <div class="input-group">
+                <input type="url" class="url-input" id="urlInput" placeholder="粘贴公众号文章链接...">
+                <button class="paste-btn" id="pasteBtn">📋</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title"><span class="icon">🎨</span> 发布配置</div>
+            <div class="config-grid">
+                <div class="config-item">
+                    <label>AI 模型</label>
+                    <select id="modelSelect">
+                        <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                        <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                    </select>
+                </div>
+                <div class="config-item">
+                    <label>封面模板</label>
+                    <select id="templateSelect">
+                        <option value="breath" selected>呼吸感</option>
+                        <option value="tech_card">科技卡片</option>
+                        <option value="cyber">赛博朋克</option>
+                        <option value="magazine">杂志风</option>
+                        <option value="quote_blue">蓝色引号</option>
+                        <option value="sticky">便签风格</option>
+                        <option value="card_blue">蓝色卡片</option>
+                        <option value="postit">便利贴</option>
+                        <option value="ticket">票据风格</option>
+                        <option value="receipt">收据风格</option>
+                        <option value="quote">引用风格</option>
+                        <option value="notion">Notion风格</option>
+                    </select>
+                </div>
+                <div class="config-item" style="grid-column: 1 / -1;">
+                    <label>提示词风格</label>
+                    <select id="promptSelect">
+                        <option value="深度科技主笔" selected>深度科技主笔 — 硬核冷峻</option>
+                        <option value="深度科技主笔亲和版">深度科技主笔亲和版 — 拟人化</option>
+                        <option value="轻松科普博主">轻松科普博主 — 通俗易懂</option>
+                        <option value="XHS常用">XHS常用 — 完整版深度科技</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 触发按钮 -->
+        <div class="section">
+            <button class="btn btn-trigger" id="btnTrigger" onclick="triggerAction()">
+                <span>🚀</span> <span>触发云端发布</span>
+            </button>
+            <div class="status-msg" id="statusMsg"></div>
+        </div>
+
+        <!-- 最近运行 -->
+        <div class="section">
+            <div class="section-title"><span class="icon">🕒</span> 最近运行</div>
+            <div id="runsList" class="runs-list">
+                <div class="empty-runs">加载中...</div>
+            </div>
+            <button class="btn-refresh" onclick="loadRuns()">🔄 刷新状态</button>
+        </div>
+
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="小红书一键发布工具 — 手机版">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="stylesheet" href="/static/style.css">
+    <title>小红书发布工具</title>
+</head>
+<body>
+
+<!-- Header -->
+<header class="app-header">
+    <div class="logo">📕</div>
+    <div class="title-group">
+        <h1>小红书发布工具</h1>
+        <div class="subtitle" id="connectionStatus">正在连接...</div>
+    </div>
+    <div class="status-dot" id="statusDot"></div>
+</header>
+
+<!-- Main Content -->
+<div class="main-content">
+
+    <!-- 链接输入 -->
+    <div class="section">
+        <div class="section-title"><span class="icon">📎</span> 文章链接</div>
+        <div class="input-group">
+            <input type="url" class="url-input" id="urlInput" placeholder="粘贴公众号文章链接...">
+            <button class="paste-btn" id="pasteBtn" title="粘贴">📋</button>
+        </div>
+    </div>
+
+    <!-- 配置 -->
+    <div class="section">
+        <div class="section-title"><span class="icon">⚙️</span> 配置</div>
+        <div class="config-grid">
+            <div class="config-item">
+                <label>AI 模型</label>
+                <select id="modelSelect"></select>
+            </div>
+            <div class="config-item">
+                <label>封面模板</label>
+                <select id="templateSelect"></select>
+            </div>
+            <div class="config-item">
+                <label>提示词风格</label>
+                <select id="promptSelect"></select>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作按钮 -->
+    <div class="section">
+        <div class="action-buttons">
+            <button class="btn btn-manual" id="btnManual" onclick="handleManual()">
+                <span>🔍</span> <span>手动生成</span>
+            </button>
+            <button class="btn btn-auto" id="btnAuto" onclick="handleAuto()">
+                <span>🚀</span> <span>自动发布</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 进度条 -->
+    <div class="progress-bar-wrapper" id="progressWrapper">
+        <div class="progress-bar">
+            <div class="progress-bar-inner" id="progressBar"></div>
+        </div>
+        <div class="progress-text" id="progressText">0%</div>
+    </div>
+
+    <!-- 日志 -->
+    <div class="section log-panel" id="logPanel">
+        <div class="section-title"><span class="icon">📊</span> 执行日志</div>
+        <div class="log-container" id="logContainer"></div>
+    </div>
+
+    <!-- 预览 -->
+    <div class="section preview-panel" id="previewPanel">
+        <div class="section-title"><span class="icon">🖼️</span> 预览</div>
+        <div class="preview-title" id="previewTitle"></div>
+        <div class="preview-subtitle" id="previewSubtitle"></div>
+        <div class="image-carousel" id="imageCarousel"></div>
+        <div style="margin-top: 16px;">
+            <button class="btn btn-publish" id="btnPublish" onclick="handlePublish()">
+                ✅ 确认发布到小红书
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<!-- 全屏图片查看 -->
+<div class="image-viewer" id="imageViewer" onclick="closeViewer()">
+    <img id="viewerImage" src="" alt="预览">
+    <button class="close-btn" onclick="closeViewer()">✕</button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

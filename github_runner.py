@@ -23,7 +23,7 @@ class EnvConfig:
         if key == 'template':
             return self.args.template
         if key == 'prompt_style':
-            return "深度科技主笔" # 默认值
+            return self.args.prompt
             
         # 默认回退
         return default
@@ -53,11 +53,14 @@ async def main():
     parser.add_argument("url", help="WeChat Article URL")
     parser.add_argument("--template", default="breath", help="Cover template name (e.g., tech_card, breath)")
     parser.add_argument("--model", default="gemini-3-flash-preview", help="AI Model name")
+    parser.add_argument("--prompt", default="深度科技主笔", help="Prompt style name")
     args = parser.parse_args()
 
     print(f"🚀 [GitHub Runner] Starting Pipeline...")
     print(f"🔗 URL: {args.url}")
     print(f"🎨 Template: {args.template}")
+    print(f"🧠 Model: {args.model}")
+    print(f"📝 Prompt Style: {args.prompt}")
 
     # 2. 检查关键环境变量
     if not os.environ.get('GEMINI_API_KEY'):
@@ -85,10 +88,21 @@ async def main():
         with open(prompts_file, 'r', encoding='utf-8') as f:
             prompts_data = json.load(f)
             templates = prompts_data.get("templates", [])
-            if templates:
-                # 使用第一个模板作为默认
+            
+            # 查找匹配的 prompt style
+            target_style = args.prompt
+            found = False
+            for t in templates:
+                if t.get("name") == target_style:
+                    prompt_template = t.get("prompt", "")
+                    print(f"✅ 已加载提示词模板: {target_style}")
+                    found = True
+                    break
+            
+            if not found and templates:
+                print(f"⚠️ 未找到提示词 '{target_style}'，使用默认 '{templates[0].get('name')}'")
                 prompt_template = templates[0].get("prompt", "")
-                print(f"📝 已加载提示词模板: {templates[0].get('name', 'Unknown')}")
+
     except Exception as e:
         print(f"⚠️ 加载提示词失败: {e}")
     

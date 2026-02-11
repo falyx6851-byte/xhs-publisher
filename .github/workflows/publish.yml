@@ -8,15 +8,28 @@ on:
         description: '公众号文章链接 (必填)'
         required: true
       template:
-        description: '封面模板 (可选: tech_card/breath/sticky...)'
+        description: '封面模板 (可选: tech_card/breath/...)'
         required: false
         default: 'breath'
+      model:
+        description: 'AI 模型 (可选)'
+        required: false
+        default: 'gemini-3-flash-preview'
+      prompt_style:
+        description: '提示词风格 (可选)'
+        required: false
+        default: '深度科技主笔'
+
+  # 允许 API 触发 (Web 端专用)
+  repository_dispatch:
+    types: [publish_trigger]
+
+permissions:
+  contents: read
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    
-    # 设置超时，防止卡死耗尽额度
     timeout-minutes: 15
 
     steps:
@@ -30,10 +43,8 @@ jobs:
 
     - name: 📦 安装依赖
       run: |
-        # 安装中文字体 (Ubuntu 没有预装)
         sudo apt-get update
         sudo apt-get install -y fonts-noto-cjk
-        
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install playwright
@@ -41,20 +52,35 @@ jobs:
 
     - name: 🚀 运行发布脚本
       env:
-        # 从 GitHub Secrets 读取敏感信息
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         XHS_COOKIE: ${{ secrets.XHS_COOKIE }}
       run: |
-        # 运行专门的 CLI 脚本
-        python github_runner.py "${{ inputs.article_url }}" --template "${{ inputs.template }}"
+        # 判断触发来源
+        if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+          URL="${{ github.event.client_payload.url }}"
+          TEMPLATE="${{ github.event.client_payload.template }}"
+          MODEL="${{ github.event.client_payload.model }}"
+          PROMPT="${{ github.event.client_payload.prompt_style }}"
+        else
+          URL="${{ inputs.article_url }}"
+          TEMPLATE="${{ inputs.template }}"
+          MODEL="${{ inputs.model }}"
+          PROMPT="${{ inputs.prompt_style }}"
+        fi
+        
+        echo "🔗 URL: $URL"
+        echo "🎨 Template: $TEMPLATE"
+        echo "🧠 Model: $MODEL"
+        
+        # 运行脚本 (注意：github_runner.py 需要稍微修改以支持更多参数)
+        python github_runner.py "$URL" --template "$TEMPLATE" --model "$MODEL" --prompt "$PROMPT"
 
-    - name: 📤 上传生成结果 (可选)
+    - name: 📤 上传生成结果
       if: success() || failure()
       uses: actions/upload-artifact@v4
       with:
-        name: generation-results
+        name: generation-results-${{ github.run_id }}
         path: |
-          temp_output/
-          core/logs/
           core/archives/
+          core/logs/
         retention-days: 3
